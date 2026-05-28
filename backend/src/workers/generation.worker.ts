@@ -1,5 +1,5 @@
 import { Worker, Job } from 'bullmq';
-import { createRedisConnection } from '../config/redis';
+import { env } from '../config/env';
 import { Assignment } from '../models/assignment.model';
 import { GeneratedAssessment } from '../models/generated-assessment.model';
 import { GenerationJob } from '../models/generation-job.model';
@@ -103,7 +103,7 @@ async function processGeneration(job: Job<GenerationJobData>) {
 
 export function startGenerationWorker() {
   const worker = new Worker<GenerationJobData>('assessment-generation', processGeneration, {
-    connection: createRedisConnection(),
+    connection: { host: env.redis.host, port: env.redis.port },
     concurrency: 2,
     limiter: { max: 5, duration: 60000 },
   });

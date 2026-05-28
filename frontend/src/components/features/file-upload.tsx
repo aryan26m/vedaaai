@@ -74,7 +74,7 @@ export function FileUpload({ onFileSelect, accept }: FileUploadProps) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            {...getRootProps()}
+            {...(getRootProps() as Omit<ReturnType<typeof getRootProps>, 'onDrag'>)}
             className={cn(
               'flex cursor-pointer flex-col items-center gap-2 rounded-xl border-2 border-dashed p-8 transition-colors',
               isDragActive

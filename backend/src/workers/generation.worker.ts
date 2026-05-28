@@ -117,7 +117,24 @@ export function startGenerationWorker() {
       console.error(`✗ Generation job ${job?.id} failed:`, error.message);
     });
 
+    let redisErrorLogged = false;
     worker.on('error', (err) => {
+      // Detect common Redis connection errors and avoid spamming logs repeatedly
+      try {
+        const isConnRefused = (err as any)?.code === 'ECONNREFUSED' ||
+          Array.isArray((err as any)?.errors) && (err as any).errors.some((e: any) => e?.code === 'ECONNREFUSED');
+
+        if (isConnRefused) {
+          if (!redisErrorLogged) {
+            console.warn('⚠ Generation worker: Redis connection refused — worker will retry in background.');
+            redisErrorLogged = true;
+          }
+          return;
+        }
+      } catch {
+        // fallthrough to normal logging
+      }
+
       console.error('Generation worker error:', (err as Error).message ?? err);
     });
 

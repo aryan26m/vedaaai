@@ -1,19 +1,20 @@
 import Redis from 'ioredis';
 import { env } from './env';
 
-export const redis = new Redis({
+const redisOptions = {
   host: env.redis.host,
   port: env.redis.port,
-  maxRetriesPerRequest: null,
-});
+  // Avoid long-running offline queues/retries during development
+  enableOfflineQueue: false,
+  maxRetriesPerRequest: 1,
+  connectTimeout: 2000,
+};
+
+export const redis = new Redis(redisOptions as any);
 
 redis.on('connect', () => console.log('✓ Redis connected'));
 redis.on('error', (err) => console.error('✗ Redis error:', err.message));
 
 export function createRedisConnection(): Redis {
-  return new Redis({
-    host: env.redis.host,
-    port: env.redis.port,
-    maxRetriesPerRequest: null,
-  });
+  return new Redis(redisOptions as any);
 }

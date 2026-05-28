@@ -102,20 +102,29 @@ async function processGeneration(job: Job<GenerationJobData>) {
 }
 
 export function startGenerationWorker() {
-  const worker = new Worker<GenerationJobData>('assessment-generation', processGeneration, {
-    connection: { host: env.redis.host, port: env.redis.port },
-    concurrency: 2,
-    limiter: { max: 5, duration: 60000 },
-  });
+  try {
+    const worker = new Worker<GenerationJobData>('assessment-generation', processGeneration, {
+      connection: { host: env.redis.host, port: env.redis.port, maxRetriesPerRequest: 1, enableOfflineQueue: false },
+      concurrency: 2,
+      limiter: { max: 5, duration: 60000 },
+    });
 
-  worker.on('completed', (job) => {
-    console.log(`✓ Generation job ${job.id} completed`);
-  });
+    worker.on('completed', (job) => {
+      console.log(`✓ Generation job ${job.id} completed`);
+    });
 
-  worker.on('failed', (job, error) => {
-    console.error(`✗ Generation job ${job?.id} failed:`, error.message);
-  });
+    worker.on('failed', (job, error) => {
+      console.error(`✗ Generation job ${job?.id} failed:`, error.message);
+    });
 
-  console.log('✓ Generation worker started');
-  return worker;
+    worker.on('error', (err) => {
+      console.error('Generation worker error:', (err as Error).message ?? err);
+    });
+
+    console.log('✓ Generation worker started');
+    return worker;
+  } catch (err) {
+    console.warn('⚠ Generation worker not started (Redis unavailable). Jobs will not be processed automatically.');
+    return undefined as any;
+  }
 }
